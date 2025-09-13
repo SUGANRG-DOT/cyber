@@ -1,3 +1,10 @@
+from flask import Flask, render_template_string, request
+import uuid
+
+app = Flask(__name__)
+
+complaints = {}
+
 html_template = '''
 <!DOCTYPE html>
 <html lang="en">
@@ -222,3 +229,46 @@ html_template = '''
 </body>
 </html>
 '''
+
+@app.route('/', methods=['GET'])
+def index():
+    return render_template_string(html_template, receipt=None, complaint=None, error=None)
+
+@app.route('/register', methods=['POST'])
+def register():
+    name = request.form['name']
+    email = request.form['email']
+    phone = request.form.get('phone', '')
+    category = request.form.get('category', '')
+    date_incident = request.form.get('date_incident', '')
+    complaint_text = request.form['complaint']
+
+    complaint_id = str(uuid.uuid4())
+
+    complaint = {
+        'id': complaint_id,
+        'name': name,
+        'email': email,
+        'phone': phone,
+        'category': category,
+        'date_incident': date_incident,
+        'complaint': complaint_text,
+    }
+    complaints[complaint_id] = complaint
+
+    return render_template_string(html_template, receipt=complaint, complaint=None, error=None)
+
+@app.route('/view', methods=['GET'])
+def view_complaint():
+    complaint_id = request.args.get('complaint_id', '').strip()
+    complaint = complaints.get(complaint_id)
+    if complaint:
+        return render_template_string(html_template, receipt=None, complaint=complaint, error=None)
+    else:
+        error_msg = "Complaint ID not found. Please check and try again."
+        return render_template_string(html_template, receipt=None, complaint=None, error=error_msg)
+
+if __name__ == '__main__':
+    app.run(debug=True)
+
+
